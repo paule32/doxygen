@@ -2216,7 +2216,7 @@ static MemberDef *addVariableToClass(
   QCString def;
   if (!type.isEmpty())
   {
-    if (related!=Relationship::Member || mtype==MemberType_Friend || Config_getBool(HIDE_SCOPE_NAMES))
+    if (related!=Relationship::Member || mtype==MemberType::Friend || Config_getBool(HIDE_SCOPE_NAMES))
     {
       if (root->spec.isAlias()) // turn 'typedef B A' into 'using A'
       {
@@ -2272,11 +2272,11 @@ static MemberDef *addVariableToClass(
 
         if (root->lang==SrcLangExt::ObjC &&
             root->mtype==MethodTypes::Property &&
-            md->memberType()==MemberType_Variable)
+            md->memberType()==MemberType::Variable)
         { // Objective-C 2.0 property
           // turn variable into a property
           md->setProtection(root->protection);
-          cd->reclassifyMember(md,MemberType_Property);
+          cd->reclassifyMember(md,MemberType::Property);
         }
         addMemberDocs(root,md,def,nullptr,FALSE,root->spec);
         AUTO_TRACE_ADD("Member already found!");
@@ -2362,7 +2362,7 @@ static MemberDef *addVariableToFile(
   FileDef *fd = root->fileDef();
 
   // see if we have a typedef that should hide a struct or union
-  if (mtype==MemberType_Typedef && Config_getBool(TYPEDEF_HIDES_STRUCT))
+  if (mtype==MemberType::Typedef && Config_getBool(TYPEDEF_HIDES_STRUCT))
   {
     QCString ttype = type;
     ttype.stripPrefix("typedef ");
@@ -2866,7 +2866,7 @@ static void addVariable(const Entry *root,int isFuncPtr=-1)
       {
         addVariableToClass(root,  // entry
             cd,    // class to add member to
-            MemberType_Friend, // type of member
+            MemberType::Friend, // type of member
             type,   // type value as string
             name,   // name of the member
             args,   // arguments as string
@@ -2892,21 +2892,21 @@ static void addVariable(const Entry *root,int isFuncPtr=-1)
               */
   }
 
-  MemberType mtype = MemberType_Variable;
+  MemberType mtype = MemberType::Variable;
   if (type=="@")
-    mtype=MemberType_EnumValue;
+    mtype=MemberType::EnumValue;
   else if (type.startsWith("typedef "))
-    mtype=MemberType_Typedef;
+    mtype=MemberType::Typedef;
   else if (type.startsWith("friend "))
-    mtype=MemberType_Friend;
+    mtype=MemberType::Friend;
   else if (root->mtype==MethodTypes::Property)
-    mtype=MemberType_Property;
+    mtype=MemberType::Property;
   else if (root->mtype==MethodTypes::Event)
-    mtype=MemberType_Event;
+    mtype=MemberType::Event;
   else if (type.find("sequence<") != -1)
-    mtype=sliceOpt ? MemberType_Sequence : MemberType_Typedef;
+    mtype=sliceOpt ? MemberType::Sequence : MemberType::Typedef;
   else if (type.find("dictionary<") != -1)
-    mtype=sliceOpt ? MemberType_Dictionary : MemberType_Typedef;
+    mtype=sliceOpt ? MemberType::Dictionary : MemberType::Typedef;
 
   if (!root->relates.isEmpty()) // related variable
   {
@@ -2970,7 +2970,7 @@ static void addVariable(const Entry *root,int isFuncPtr=-1)
         }
         else // anonymous scope inside namespace or file => put variable in the global scope
         {
-          if (mtype==MemberType_Variable)
+          if (mtype==MemberType::Variable)
           {
             AUTO_TRACE_ADD("Adding anonymous member to global scope '{}'");
             md=addVariableToFile(root,mtype,pScope,type,name,args,TRUE,nullptr);
@@ -3036,7 +3036,7 @@ static void buildTypedefList(const Entry *root)
     if (!root->parent()->name.isEmpty() && root->parent()->section.isCompound() && cd)
     {
       AUTO_TRACE_ADD("typedef '{}' in class '{}'", rname,cd->name());
-      addVariableToClass(root,cd,MemberType_Typedef,rtype,rname,root->args,false,nullptr,
+      addVariableToClass(root,cd,MemberType::Typedef,rtype,rname,root->args,false,nullptr,
                          root->protection,Relationship::Member);
     }
     else
@@ -3177,7 +3177,7 @@ static void addInterfaceOrServiceToServiceOrSingleton(
         QCString const& rname)
 {
   FileDef *fd = root->fileDef();
-  enum MemberType type = root->section.isExportedInterface() ? MemberType_Interface : MemberType_Service;
+  enum MemberType type = root->section.isExportedInterface() ? MemberType::Interface : MemberType::Service;
   QCString fileName = root->fileName;
   if (fileName.isEmpty() && root->tagInfo())
   {
@@ -3300,11 +3300,11 @@ static void addMethodToClass(const Entry *root,ClassDefMutable *cd,
   QCString name=removeRedundantWhiteSpace(rname);
   name.stripPrefix("::");
 
-  MemberType mtype = MemberType_Function;
-  if (isFriend)                              mtype=MemberType_Friend;
-  else if (root->mtype==MethodTypes::Signal) mtype=MemberType_Signal;
-  else if (root->mtype==MethodTypes::Slot)   mtype=MemberType_Slot;
-  else if (root->mtype==MethodTypes::DCOP)   mtype=MemberType_DCOP;
+  MemberType mtype = MemberType::Function;
+  if (isFriend)                              mtype=MemberType::Friend;
+  else if (root->mtype==MethodTypes::Signal) mtype=MemberType::Signal;
+  else if (root->mtype==MethodTypes::Slot)   mtype=MemberType::Slot;
+  else if (root->mtype==MethodTypes::DCOP)   mtype=MemberType::DCOP;
 
   // strip redundant template specifier for constructors
   int i = -1;
@@ -3431,7 +3431,7 @@ static void addGlobalFunction(const Entry *root,const QCString &rname,const QCSt
       root->fileName,root->startLine,root->startColumn,
       root->type,name,root->args,root->exception,
       root->protection,root->virt,root->isStatic,Relationship::Member,
-      MemberType_Function,
+      MemberType::Function,
       !root->tArgLists.empty() ? root->tArgLists.back() : ArgumentList(),
       root->argList,root->metaData);
   auto mmd = toMemberDefMutable(md.get());
@@ -5730,7 +5730,7 @@ static void addLocalObjCMethod(const Entry *root,
         root->fileName,root->startLine,root->startColumn,
         funcType,funcName,funcArgs,exceptions,
         root->protection,root->virt,root->isStatic,Relationship::Member,
-        MemberType_Function,ArgumentList(),root->argList,root->metaData);
+        MemberType::Function,ArgumentList(),root->argList,root->metaData);
     auto mmd = toMemberDefMutable(md.get());
     mmd->setTagInfo(root->tagInfo());
     mmd->setLanguage(root->lang);
@@ -6132,7 +6132,7 @@ static void addMemberSpecialization(const Entry *root,
       break;
     }
   }
-  MemberType mtype=MemberType_Function;
+  MemberType mtype=MemberType::Function;
   ArgumentList tArgList;
   //  getTemplateArgumentsFromName(cd->name()+"::"+funcName,root->tArgLists);
   auto md = createMemberDef(
@@ -6193,10 +6193,10 @@ static void addOverloaded(const Entry *root,MemberName *mn,
     ClassDefMutable *cd = mdm ? mdm->getClassDefMutable() : nullptr;
     if (cd==nullptr) return;
 
-    MemberType mtype = MemberType_Function;
-    if      (root->mtype==MethodTypes::Signal)  mtype=MemberType_Signal;
-    else if (root->mtype==MethodTypes::Slot)    mtype=MemberType_Slot;
-    else if (root->mtype==MethodTypes::DCOP)    mtype=MemberType_DCOP;
+    MemberType mtype = MemberType::Function;
+    if      (root->mtype==MethodTypes::Signal)  mtype=MemberType::Signal;
+    else if (root->mtype==MethodTypes::Slot)    mtype=MemberType::Slot;
+    else if (root->mtype==MethodTypes::DCOP)    mtype=MemberType::DCOP;
 
     // new overloaded member function
     std::unique_ptr<ArgumentList> tArgList =
@@ -6728,15 +6728,15 @@ static void findMember(const Entry *root,
 
           if (newMember) // need to create a new member
           {
-            MemberType mtype = MemberType_Function;
+            MemberType mtype = MemberType::Function;
             switch (root->mtype)
             {
-              case MethodTypes::Method:   mtype = MemberType_Function; break;
-              case MethodTypes::Signal:   mtype = MemberType_Signal;   break;
-              case MethodTypes::Slot:     mtype = MemberType_Slot;     break;
-              case MethodTypes::DCOP:     mtype = MemberType_DCOP;     break;
-              case MethodTypes::Property: mtype = MemberType_Property; break;
-              case MethodTypes::Event:    mtype = MemberType_Event;    break;
+              case MethodTypes::Method:   mtype = MemberType::Function; break;
+              case MethodTypes::Signal:   mtype = MemberType::Signal;   break;
+              case MethodTypes::Slot:     mtype = MemberType::Slot;     break;
+              case MethodTypes::DCOP:     mtype = MemberType::DCOP;     break;
+              case MethodTypes::Property: mtype = MemberType::Property; break;
+              case MethodTypes::Event:    mtype = MemberType::Event;    break;
             }
 
             //printf("New related name '%s' '%d'\n",qPrint(funcName),
@@ -7192,7 +7192,7 @@ static void findEnums(const Entry *root)
           QCString(),name,QCString(),QCString(),
           root->protection,Specifier::Normal,FALSE,
           isMemberOf ? Relationship::Foreign : isRelated ? Relationship::Related : Relationship::Member,
-          MemberType_Enumeration,
+          MemberType::Enumeration,
           ArgumentList(),ArgumentList(),root->metaData);
       auto mmd = toMemberDefMutable(md.get());
       mmd->setTagInfo(root->tagInfo());
@@ -7403,7 +7403,7 @@ static void addEnumValuesToEnums(const Entry *root)
                       fileName,e->startLine,e->startColumn,
                       e->type,e->name,e->args,QCString(),
                       e->protection, Specifier::Normal,e->isStatic,Relationship::Member,
-                      MemberType_EnumValue,ArgumentList(),ArgumentList(),e->metaData);
+                      MemberType::EnumValue,ArgumentList(),ArgumentList(),e->metaData);
                   auto fmmd = toMemberDefMutable(fmd.get());
                   NamespaceDef *mnd = md->getNamespaceDef();
                   if      (md->getClassDef())
@@ -8439,7 +8439,7 @@ static void buildDefineList()
         auto md = createMemberDef(
             def.fileName,def.lineNr,def.columnNr,
             "#define",def.name,def.args,QCString(),
-            Protection::Public,Specifier::Normal,FALSE,Relationship::Member,MemberType_Define,
+            Protection::Public,Specifier::Normal,FALSE,Relationship::Member,MemberType::Define,
             ArgumentList(),ArgumentList(),"");
         auto mmd = toMemberDefMutable(md.get());
 
@@ -9105,7 +9105,7 @@ static void findDefineDocumentation(Entry *root)
     {
       auto md = createMemberDef(root->tagInfo()->tagName,1,1,
                     "#define",root->name,root->args,QCString(),
-                    Protection::Public,Specifier::Normal,FALSE,Relationship::Member,MemberType_Define,
+                    Protection::Public,Specifier::Normal,FALSE,Relationship::Member,MemberType::Define,
                     ArgumentList(),ArgumentList(),"");
       auto mmd = toMemberDefMutable(md.get());
       mmd->setTagInfo(root->tagInfo());
@@ -9122,14 +9122,14 @@ static void findDefineDocumentation(Entry *root)
       int count=0;
       for (const auto &md : *mn)
       {
-        if (md->memberType()==MemberType_Define) count++;
+        if (md->memberType()==MemberType::Define) count++;
       }
       if (count==1)
       {
         for (const auto &imd : *mn)
         {
           MemberDefMutable *md = toMemberDefMutable(imd.get());
-          if (md && md->memberType()==MemberType_Define)
+          if (md && md->memberType()==MemberType::Define)
           {
             addDefineDoc(root,md);
           }
@@ -9147,7 +9147,7 @@ static void findDefineDocumentation(Entry *root)
         for (const auto &imd : *mn)
         {
           MemberDefMutable *md = toMemberDefMutable(imd.get());
-          if (md && md->memberType()==MemberType_Define)
+          if (md && md->memberType()==MemberType::Define)
           {
             if (haveEqualFileNames(root, md) || isEntryInGroupOfMember(root, md))
               // doc and define in the same file or group assume they belong together.

@@ -2237,7 +2237,7 @@ ferr:
       Specifier::Normal,
       cur->isStatic,
       Relationship::Member,
-      MemberType_Variable,
+      MemberType::Variable,
       ArgumentList(),
       ArgumentList(),
       "");
